@@ -45,35 +45,16 @@ const Login = ({isLoading, setLoading}) => {
     else {
       setError(null);
       try {
-        const {data} = await (isSignup ? api.signUp(user) : api.logIn(user));
+        const {data} =(isSignup ? await api.signUp(user) : await api.logIn(user));
         console.log(data)
         dispatch(setUser(data));
         navigation.navigate('Notes');
         setLoading(false);
       } catch (err) {
         console.log(err);
+        throw err;
+
       }
-
-
-      const promise = isSignup? api.signup(user) : api.login(user);
-      promise
-        .then(async ({data}) => {
-          const {accessToken, userData} = JSON.stringify(data);
-
-          if (accessToken) {
-            setUser(accessToken);
-            Keychain.setGenericPassword(userData, accessToken).catch(error => {
-              console.log(error);
-            });
-          }
-          navigation.navigate('Notes');
-          setLoading(false);
-        })
-        .catch(error => {
-          setError('Login or password are incorrect');
-          setLoading(false);
-          console.log(error);
-        });
     }
   };
 
