@@ -13,8 +13,10 @@ import lockIcon from 'react-native-vector-icons/dist/Entypo';
 import CustomInput from '../components/CustomInput';
 import {NavigationActions} from 'react-navigation';
 import {useNavigation} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
+import {setUser} from '../store/userSlice';
 
-const Login = ({setUser, isLoading, setLoading}) => {
+const Login = ({isLoading, setLoading}) => {
   const navigation = useNavigation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -22,13 +24,17 @@ const Login = ({setUser, isLoading, setLoading}) => {
   const [email, setEmail] = useState('');
   const [isSignup, setSignup] = useState(false);
   const [error, setError] = useState(null);
-  const setErrorText = (text) =>{
+  const user = useSelector(state => state.user.user);
+  const dispatch = useDispatch();
+  const setErrorText = text => {
     setError(text);
     setLoading(false);
-  }
+  };
   const handleSubmit = async () => {
     setLoading(true);
-    const user = {login: username, password, confirmPassword, email};
+    const user = {password, email};
+    if (isSignup) user.username = username;
+    else user.login = username;
     if (
       (isSignup && (!username || !password || !confirmPassword || !email)) ||
       (!isSignup && (!username || !password))
@@ -38,27 +44,16 @@ const Login = ({setUser, isLoading, setLoading}) => {
       setErrorText("Password don't match");
     else {
       setError(null);
-      if (isSignup) api.signup(user);
-      else
-        api
-          .login(user)
-          .then(async ({data}) => {
-            const {accessToken, userData} = JSON.stringify(data);
-            
-            if (accessToken) {
-              setUser(accessToken);
-              Keychain.setGenericPassword(userData, accessToken).catch(error => {
-                console.log(error);
-              });
-            }
-            navigation.navigate('Notes');
-            setLoading(false);
-          })
-          .catch(error => {
-            setError('Login or password are incorrect');
-            setLoading(false);
-            console.log(error)
-          });
+      try {
+        const {data} = await (isSignup ? api.signUp(user) : api.logIn(user));
+        console.log(data)
+        dispatch(setUser(data));
+        navigation.navigate('Notes');
+        setLoading(false);
+      } catch (err) {
+        console.log(err);
+      }
+
     }
   };
 

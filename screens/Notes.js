@@ -50,7 +50,7 @@ const Notes = ({user}) => {
           author
         };
 
-        const {data} = await api.addPost(newPost);
+        const {data} = await api.addPost({...newPost, token});
         setItems(prevItems => {
           return [newPost, ...prevItems];
         });
