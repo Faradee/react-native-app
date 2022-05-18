@@ -22,13 +22,15 @@ const Login = ({setUser, isLoading, setLoading}) => {
   const [email, setEmail] = useState('');
   const [isSignup, setSignup] = useState(false);
   const [error, setError] = useState(null);
-  const setErrorText = (text) =>{
+  const setErrorText = text => {
     setError(text);
     setLoading(false);
-  }
+  };
   const handleSubmit = async () => {
     setLoading(true);
-    const user = {login: username, password, confirmPassword, email};
+    const user = {password, email};
+    if (isSignup) user.username = username;
+    else user.login = username;
     if (
       (isSignup && (!username || !password || !confirmPassword || !email)) ||
       (!isSignup && (!username || !password))
@@ -38,27 +40,25 @@ const Login = ({setUser, isLoading, setLoading}) => {
       setErrorText("Password don't match");
     else {
       setError(null);
-      if (isSignup) api.signup(user);
-      else
-        api
-          .login(user)
-          .then(async ({data}) => {
-            const {accessToken, userData} = JSON.stringify(data);
-            
-            if (accessToken) {
-              setUser(accessToken);
-              Keychain.setGenericPassword(userData, accessToken).catch(error => {
-                console.log(error);
-              });
-            }
-            navigation.navigate('Notes');
-            setLoading(false);
-          })
-          .catch(error => {
-            setError('Login or password are incorrect');
-            setLoading(false);
-            console.log(error)
-          });
+      const promise = isSignup? api.signup(user) : api.login(user);
+      promise
+        .then(async ({data}) => {
+          const {accessToken, userData} = JSON.stringify(data);
+
+          if (accessToken) {
+            setUser(accessToken);
+            Keychain.setGenericPassword(userData, accessToken).catch(error => {
+              console.log(error);
+            });
+          }
+          navigation.navigate('Notes');
+          setLoading(false);
+        })
+        .catch(error => {
+          setError('Login or password are incorrect');
+          setLoading(false);
+          console.log(error);
+        });
     }
   };
 
