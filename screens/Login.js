@@ -46,7 +46,7 @@ const Login = ({isLoading, setLoading}) => {
       setError(null);
       try {
         const {data} =(isSignup ? await api.signUp(user) : await api.logIn(user));
-        console.log(data)
+        console.log(data) 
         dispatch(setUser(data));
         navigation.navigate('Notes');
         setLoading(false);
