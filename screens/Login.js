@@ -54,6 +54,26 @@ const Login = ({isLoading, setLoading}) => {
         console.log(err);
       }
 
+
+      const promise = isSignup? api.signup(user) : api.login(user);
+      promise
+        .then(async ({data}) => {
+          const {accessToken, userData} = JSON.stringify(data);
+
+          if (accessToken) {
+            setUser(accessToken);
+            Keychain.setGenericPassword(userData, accessToken).catch(error => {
+              console.log(error);
+            });
+          }
+          navigation.navigate('Notes');
+          setLoading(false);
+        })
+        .catch(error => {
+          setError('Login or password are incorrect');
+          setLoading(false);
+          console.log(error);
+        });
     }
   };
 
