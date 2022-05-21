@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,17 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import * as api from '../api';
-import * as Keychain from 'react-native-keychain';
 import userIcon from 'react-native-vector-icons/dist/AntDesign';
 import lockIcon from 'react-native-vector-icons/dist/Entypo';
 import CustomInput from '../components/CustomInput';
 import {NavigationActions} from 'react-navigation';
-import {useNavigation} from '@react-navigation/native';
+import {useIsFocused, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {setUser} from '../store/userSlice';
 
-const Login = ({isLoading, setLoading}) => {
+const Login = () => {
+  const isFocused = useIsFocused();
   const navigation = useNavigation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,14 +25,14 @@ const Login = ({isLoading, setLoading}) => {
   const [email, setEmail] = useState('');
   const [isSignup, setSignup] = useState(false);
   const [error, setError] = useState(null);
-  const user = useSelector(state => state.user.user);
+  const user = useSelector(state => state.user);
   const dispatch = useDispatch();
+  //TODO:FIX LOGIN SO YOU CAN LOGOUT
+
   const setErrorText = text => {
     setError(text);
-    setLoading(false);
   };
   const handleSubmit = async () => {
-    setLoading(true);
     const user = {password, email};
     if (isSignup) user.username = username;
     else user.login = username;
@@ -45,15 +46,15 @@ const Login = ({isLoading, setLoading}) => {
     else {
       setError(null);
       try {
-        const {data} =(isSignup ? await api.signUp(user) : await api.logIn(user));
-        console.log(data) 
+        const {data} = await (isSignup ? api.signUp(user) : api.logIn(user));
         dispatch(setUser(data));
+        await AsyncStorage.setItem('user', JSON.stringify(data));
         navigation.navigate('Notes');
-        setLoading(false);
       } catch (err) {
+        if ((err.status = 404)) {
+          setError('Invalid credentials');
+        }
         console.log(err);
-        throw err;
-
       }
     }
   };
@@ -78,11 +79,6 @@ const Login = ({isLoading, setLoading}) => {
         secure={true}
         placeholder="Password"
       />
-      {error ? (
-        <>
-          <Text style={styles.error}>{error}</Text>
-        </>
-      ) : null}
 
       {isSignup ? (
         <>
@@ -99,6 +95,11 @@ const Login = ({isLoading, setLoading}) => {
             setValue={setEmail}
             placeholder="Email"
           />
+        </>
+      ) : null}
+      {error ? (
+        <>
+          <Text style={styles.error}>{error}</Text>
         </>
       ) : null}
       <View style={styles.buttonContainer}>

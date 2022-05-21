@@ -1,6 +1,5 @@
 import {createSlice} from '@reduxjs/toolkit';
 import * as api from '../api';
-import * as Keychain from 'react-native-keychain';
 
 export const postsSlice = createSlice({
   name: 'posts',

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   ScrollView,
@@ -6,36 +6,48 @@ import {
   StyleSheet,
   FlatList,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import ListItem from '../components/ListItem.js';
 import AddItem from '../components/AddItem.js';
 import * as api from '../api';
 import 'react-native-get-random-values';
-import {v4 as uuidv4} from 'uuid';
+import {useSelector} from 'react-redux';
+import {useIsFocused} from '@react-navigation/native';
 
-const Notes = ({user}) => {
-  useEffect(() => {
-    getItems();
-  }, []);
-
+const Notes = navigation => {
+  const isFocused = useIsFocused();
+  const token = useSelector(state => state.user.token);
+  const user = useSelector(state => state.user);
+  const [refreshing, setRefreshing] = useState(false);
   const randomColor = () => {
     return `rgb(${Math.floor(Math.random() * (255 - 80) + 80)},${Math.floor(
       Math.random() * (255 - 80) + 80,
     )},${Math.floor(Math.random() * (255 - 80) + 80)})`;
   };
+  useEffect(
+    useCallback(() => {
+      if (isFocused);
+      getItems();
+    }),
+    [user],
+  );
 
   const [items, setItems] = useState([]);
 
   const getItems = async () => {
-    api
-      .fetchPosts()
-      .then(res => {
-        const {data} = res;
-        setItems(data);
-      })
-      .catch(err => {
-        Alert.alert('Error', 'Failed to connect to API', [{text: 'OK'}]);
-      });
+    if(user.username)
+    try {
+      setRefreshing(true);
+      const {data} = await api.fetchPosts({token});
+      setItems(data.sort((itemA, itemB) => itemB.id - itemA.id));
+      setRefreshing(false);
+    } catch (err) {
+      console.log(err);
+      setRefreshing(false);
+      Alert.alert('Error', 'Failed to connect to API', [{text: 'OK'}]);
+    }
   };
 
   const addItem = async text => {
@@ -44,16 +56,12 @@ const Notes = ({user}) => {
     } else
       try {
         const newPost = {
-          id: uuidv4(),
           color: randomColor(),
-          text,
-          author
+          text: text,
         };
 
-        const {data} = await api.addPost({...newPost, token});
-        setItems(prevItems => {
-          return [newPost, ...prevItems];
-        });
+        const res = await api.addPost({...newPost, token});
+        getItems();
       } catch (err) {
         console.log(err);
         Alert.alert('Error', "Couldn't connect to API", [{text: 'Ok'}]);
@@ -62,7 +70,7 @@ const Notes = ({user}) => {
 
   const deleteItem = async id => {
     try {
-      const {data} = await api.deletePost(id);
+      await api.deletePost({id, token});
       setItems(prevItems => {
         return prevItems.filter(item => item.id != id);
       });
@@ -74,22 +82,41 @@ const Notes = ({user}) => {
   return (
     <View style={styles.container}>
       <AddItem addItem={addItem} />
-      <ScrollView horizontal contentContainerStyle={{width: '100%'}}>
-        <FlatList
-          data={items}
-          renderItem={({item}) => (
-            <ListItem deleteItem={deleteItem} username={user.username} item={item}></ListItem>
-          )}
-        />
+      <ScrollView
+        alwaysBounceVertical={true}
+        horizontal
+        contentContainerStyle={{
+          width: '100%',
+          justifyContent: 'center',
+        }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={getItems} />
+        }>
+        {refreshing ? (
+          <ActivityIndicator size="large" />
+        ) : (
+          <>
+            {items.length != 0 ? (
+              <FlatList
+                data={items}
+                renderItem={({item}) => (
+                  <ListItem
+                    deleteItem={deleteItem}
+                    username={user.username}
+                    item={item}></ListItem>
+                )}
+              />
+            ) : (
+              <Text>No posts</Text>
+            )}
+          </>
+        )}
       </ScrollView>
     </View>
   );
 };
 
 export default Notes;
-
-
-
 
 const styles = StyleSheet.create({
   container: {

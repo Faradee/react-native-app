@@ -11,10 +11,9 @@ export const userSlice = createSlice({
   reducers: {
     setUser: (state, action) => {
       try {
-        
-        state.username = JSON.stringify(action.payload.username);
-        state.email = JSON.stringify(action.payload.email);
-        state.token = JSON.stringify(action.payload.accessToken);
+        state.username = action.payload.username;
+        state.email = action.payload.email;
+        state.token = action.payload.accessToken;
       } catch (err) {
         console.log(err);
       }
