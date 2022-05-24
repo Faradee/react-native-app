@@ -52,6 +52,7 @@ const Login = () => {
         navigation.navigate('Notes');
       } catch (err) {
         if ((err.status = 404)) {
+          console.log(err)
           setError('Invalid credentials');
         }
         console.log(err);

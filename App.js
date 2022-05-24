@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, {useState, useEffect} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import {createDrawerNavigator, DrawerItem} from '@react-navigation/drawer';
 import Home from './screens/Home';
 import Notes from './screens/Notes';
@@ -29,11 +29,10 @@ const App = () => {
     getData();
   }, []);
   const user = useSelector(state => state.user);
-  const [isLoading, setLoading] = useState(false);
   return (
     <NavigationContainer>
       <Drawer.Navigator
-        initialRouteName={user=={} ? 'Login' : 'Home'}
+        initialRouteName={!useSelector(state=>state.user)?'Login':'Home'}
         drawerContent={props => <CustomDrawer {...props} defa />}>
         <Drawer.Screen name="Home" component={Home} />
         <Drawer.Screen name="Notes" component={Notes} />
